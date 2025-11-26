@@ -3,10 +3,9 @@ from neo4j import GraphDatabase
 from cadastrar import insertCliente, insertVendedor, insertEndereco, insertCompra, insertFavorito, insertProduto
 from listar import listar_clientes, listar_produtos, listar_vendedores
 
-# Configuração do Neo4j
 uri = "neo4j+ssc://9c671abc.databases.neo4j.io"
 user = "neo4j"
-password = "ih09QaNZ1RCmKT67lpHPZLZASDicB6ZQqHRO2ZJTfME" # Cuidado com a senha exposta!
+password = "ih09QaNZ1RCmKT67lpHPZLZASDicB6ZQqHRO2ZJTfME"
 
 driver = GraphDatabase.driver(uri, auth=(user, password))
 
@@ -48,21 +47,31 @@ while True:
         insertVendedor(driver)
     
     elif opcao == 3:
-        cpf = input("Digite o CPF do Usuário (Cliente ou Vendedor): ").strip()
-        insertEndereco(driver, cpf)
+        try:
+            usuario = int(input("Deseja cadastrar o endereço para qual tipo de usuário? (1-Cliente / 2-Vendedor): ").strip())
+        except ValueError:
+            limpar()
+            print("Por favor, digite um número válido.")
+            continue
+        match usuario:
+            case 1:
+                cpf = input("Digite o CPF do Cliente: ").strip()
+                insertEndereco(driver, cpf, "Cliente")
+            case 2:
+                cpf = input("Digite o CPF do Vendedor: ").strip()
+                insertEndereco(driver, cpf, "Vendedor")
 
     elif opcao == 4:
         insertProduto(driver)
 
     elif opcao == 5:
         cpf = input("Digite o CPF do Cliente que fará a compra: ").strip()
-        insertCompra(driver, cpf) # Sua função insertCompra já deve ter a lógica de buscar produtos
+        insertCompra(driver, cpf)
     
     elif opcao == 6:
         cpf = input("Digite o CPF do Cliente: ").strip()
         insertFavorito(driver, cpf)
 
-    # --- BLOCO DE CONSULTAS ---
     elif opcao == 7:
         listar_clientes(driver)
         input("\nPressione Enter para voltar...")
