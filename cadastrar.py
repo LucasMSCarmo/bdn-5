@@ -6,8 +6,6 @@ from neo4j import GraphDatabase
 def limpar():
     system('cls' if system == 'nt' else 'clear')
 
-# --- FUNÇÕES DE BANCO (CYPHER) ---
-
 def verificar_duplicidade(tx, usuario, chave, valor):
     query = f"MATCH (n) WHERE (n:{usuario}) AND n.{chave} = $valor RETURN n"
     result = tx.run(query, valor=valor)
@@ -416,8 +414,19 @@ def insertCompra(driver, cpf):
                 print("Produto já adicionado ao carrinho.")
                 if input(f"Deseja mudar a quantidade de {item['quantidade']}? (s/n): ").lower() != 's':
                     continue
+                try:
+                    print(f"Estoque disponível: {produto_selecionado['estoque'] + item['quantidade']}")
+                    nova_quantidade = int(input(f"Nova quantidade para '{produto_selecionado['nome']}': ").strip())
+                    if nova_quantidade <= 0 or nova_quantidade > produto_selecionado['estoque'] + item['quantidade']:
+                        raise ValueError
+                    total_compra += produto_selecionado['preco'] * (nova_quantidade - item['quantidade'])
+                    produto_selecionado['estoque'] += item['quantidade'] - nova_quantidade
+                    item['quantidade'] = nova_quantidade
+                    continue
+                except ValueError:
+                    print("Quantidade inválida ou excede o estoque disponível.")
+                    continue
 
-                
             quantidade = int(input(f"Quantidade de '{produto_selecionado['nome']}' a adicionar: ").strip())
             if quantidade <= 0 or quantidade > produto_selecionado['estoque']:
                 raise ValueError

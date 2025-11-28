@@ -1,5 +1,5 @@
-def findClientes(conexao):
-    clientes = list(conexao.find().sort("nome"))
+def findClientes(driver):
+    clientes = driver.execute_read("MATCH (c:Cliente) RETURN c ORDER BY c.nome").data()
 
     if len(clientes) == 0:
         print("Nenhum cliente cadastrado.")
@@ -24,8 +24,8 @@ def findClientes(conexao):
                 if numero_enderecos != 0:
                     print(f"    --------------------------------")
 
-def findVendedores(conexao):
-    vendedores = list(conexao.find().sort("nome"))
+def findVendedores(driver):
+    vendedores = driver.execute_read("MATCH (v:Vendedor) RETURN v ORDER BY v.nome").data()
 
     if len(vendedores) == 0:
         print("Nenhum vendedor cadastrado.")
@@ -50,42 +50,20 @@ def findVendedores(conexao):
                 if numero_enderecos != 0:
                     print(f"    --------------------------------")
                 
-def findProdutos(conexao, retorno):
-    vendedores = conexao.find()
+def findProdutos(driver):
+    produtos = driver.execute_read("MATCH (p:Produto) RETURN p ORDER BY p.nome").data()
     
-    dados_produtos = []
-    for vendedor in vendedores:
-        for produto in vendedor['produtos']:
-            produto_com_vendedor = produto.copy()
-            produto_com_vendedor['vendedor_nome'] = vendedor['nome']
-            produto_com_vendedor['vendedor_id'] = vendedor['_id']
-            dados_produtos.append(produto_com_vendedor)
-    
-    if not dados_produtos:
+    if len(produtos) == 0:
         print("Nenhum produto cadastrado.")
-        return []
-    
-    if retorno == 'compra':
-        dados_produtos = [produto for produto in dados_produtos if produto['estoque'] > 0]
-        if not dados_produtos:
-            print("Nenhum produto com estoque disponível para compra.")
-            return []
-    
-    dados_produtos = sorted(dados_produtos, key=lambda x: x['nome'])
-
-    espacamento = "  " * 2 if retorno != 'lista' else ""
-    numero_produtos = len(dados_produtos)
-    for i, produto in enumerate(dados_produtos, 1):
+        return
+    numero_produtos = len(produtos)
+    for produto in produtos:
         numero_produtos -= 1
-        if retorno != 'lista':
-            print(f"  ID: {i}")
         print(
-            f"\n{espacamento}Nome: {produto['nome']}",
-            f"\n{espacamento}Descrição: {produto['descricao']}",
-            f"\n{espacamento}Preço: R$ {produto['preco']:.2f}",
-            f"\n{espacamento}Estoque: {produto['estoque']}"
+            f"\nNome: {produto['nome']}",
+            f"\nDescrição: {produto['descricao']}",
+            f"\nPreço: R$ {produto['preco']:.2f}",
+            f"\nEstoque: {produto['estoque']}"
         )
         if numero_produtos != 0:
             print(f"--------------------------------\n")
-    if retorno != 'lista':
-        return dados_produtos

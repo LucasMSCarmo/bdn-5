@@ -1,7 +1,7 @@
 import os
 from neo4j import GraphDatabase
 from cadastrar import insertCliente, insertVendedor, insertEndereco, insertCompra, insertFavorito, insertProduto
-from listar import listar_clientes, listar_produtos, listar_vendedores
+from listar import findClientes, findVendedores, findProdutos
 
 uri = "neo4j+ssc://9c671abc.databases.neo4j.io"
 user = "neo4j"
@@ -31,12 +31,7 @@ while True:
 ============================================================
     """)
     
-    try:
-        opcao = int(input("Digite a opção desejada: "))
-    except ValueError:
-        limpar()
-        print("Por favor, digite um número.")
-        continue
+    opcao = int(input("Digite a opção desejada: "))
 
     limpar()
 
@@ -48,40 +43,64 @@ while True:
     
     elif opcao == 3:
         try:
-            usuario = int(input("Deseja cadastrar o endereço para qual tipo de usuário? (1-Cliente / 2-Vendedor): ").strip())
+            print("1 - Cliente\n2 - Vendedor")
+            usuario = int(input("Digite o tipo de usuário para adicionar o endereço: "))
+            if usuario not in [1, 2]:
+                    raise ValueError
         except ValueError:
             limpar()
             print("Por favor, digite um número válido.")
             continue
         match usuario:
             case 1:
-                cpf = input("Digite o CPF do Cliente: ").strip()
-                insertEndereco(driver, cpf, "Cliente")
+                with driver.session() as session:
+                    cpf = input("Digite o CPF do Cliente: ").strip()
+                    if session.execute_read("MATCH (n:Cliente {cpf: $cpf}) RETURN n LIMIT 1", cpf=cpf).single() is None:
+                        limpar()
+                        print("Cliente não encontrado.")
+                        continue
+                    insertEndereco(session, cpf, "Cliente")
             case 2:
-                cpf = input("Digite o CPF do Vendedor: ").strip()
-                insertEndereco(driver, cpf, "Vendedor")
+                with driver.session() as session:
+                    cpf = input("Digite o CPF do Vendedor: ").strip()
+                    if session.execute_read("MATCH (n:Vendedor {cpf: $cpf}) RETURN n LIMIT 1", cpf=cpf).single() is None:
+                        limpar()
+                        print("Vendedor não encontrado.")
+                        continue
+                    insertEndereco(session, cpf, "Vendedor")
 
     elif opcao == 4:
-        insertProduto(driver)
+        with driver.session() as session:
+            
+            insertProduto(session)
 
     elif opcao == 5:
-        cpf = input("Digite o CPF do Cliente que fará a compra: ").strip()
-        insertCompra(driver, cpf)
+        with driver.session() as session:
+            cpf = input("Digite o CPF do Cliente que fará a compra: ").strip()
+            if session.execute_read("MATCH (n:Cliente {cpf: $cpf}) RETURN n LIMIT 1", cpf=cpf).single() is None:
+                limpar()
+                print("Cliente não encontrado.")
+                continue
+            insertCompra(session, cpf)
     
     elif opcao == 6:
-        cpf = input("Digite o CPF do Cliente: ").strip()
-        insertFavorito(driver, cpf)
-
+        with driver.session() as session:
+            cpf = input("Digite o CPF do Cliente: ").strip()
+            if session.execute_read("MATCH (n:Cliente {cpf: $cpf}) RETURN n LIMIT 1", cpf=cpf).single() is None:
+                limpar()
+                print("Cliente não encontrado.")
+                continue
+            insertFavorito(session, cpf)
     elif opcao == 7:
-        listar_clientes(driver)
+        findClientes(driver)
         input("\nPressione Enter para voltar...")
 
     elif opcao == 8:
-        listar_vendedores(driver)
+        findVendedores(driver)
         input("\nPressione Enter para voltar...")
 
     elif opcao == 9:
-        listar_produtos(driver)
+        findProdutos(driver)
         input("\nPressione Enter para voltar...")
 
     elif opcao == 0:
