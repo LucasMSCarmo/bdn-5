@@ -1,10 +1,11 @@
 import hashlib
 from os import system
+import os
 from neo4j import GraphDatabase
 
 
 def limpar():
-    system('cls' if system == 'nt' else 'clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def verificar_duplicidade(tx, usuario, chave, valor):
     query = f"MATCH (n) WHERE (n:{usuario}) AND n.{chave} = $valor RETURN n"
@@ -204,18 +205,18 @@ def insertVendedor(driver):
             print(f"Falha ao cadastrar vendedor: {e}")
 
 def add_endereco_neo4j(tx, dados):
-    query = """
-    MATCH (p:$usuario) 
+    query = f"""
+    MATCH (p:{dados['usuario']})
     WHERE p.cpf = $cpf
     FOREACH (end IN $novos_enderecos |
-        CREATE (e:Endereco {
+        CREATE (e:Endereco {{
             logradouro: end.logradouro,
             numero: end.numero,
             complemento: end.complemento,
             bairro: end.bairro,
             cidade: end.cidade,
             estado: end.estado
-        })
+        }})
         CREATE (p)-[:POSSUI_ENDERECO]->(e)
     )
     """
@@ -313,9 +314,9 @@ def insertProduto(driver, cpf):
 
 def get_produtos_disponiveis(tx, estoque):
     if estoque:
-        query = "MATCH (p:Produto) WHERE p.estoque > 0 RETURN p.id, p.nome as nome, p.preco as preco, p.descricao as descricao, p.estoque as estoque"
+        query = "MATCH (p:Produto) WHERE p.estoque > 0 RETURN elementId(p) as id, p.nome as nome, p.preco as preco, p.descricao as descricao, p.estoque as estoque"
     else:
-        query = "MATCH (p:Produto) RETURN p.id, p.nome as nome, p.preco as preco, p.descricao as descricao, p.estoque as estoque"
+        query = "MATCH (p:Produto) RETURN elementId(p) as id, p.nome as nome, p.preco as preco, p.descricao as descricao, p.estoque as estoque"
     result = tx.run(query)
     return [record.data() for record in result]
 
@@ -343,7 +344,7 @@ def insertFavorito(driver, cpf):
     for i, p in enumerate(produtos_disponiveis):
         print(f"{i + 1}. {p['nome']} - {p['preco']:.2f} - Descrição: {p['descricao']}")
     while True:
-        opcao = input("\nDigite os números dos produtos para favoritar (ou '0' para sair): ").split()
+        opcao = input("\nDigite os números dos produtos para favoritar (ou '0' para sair): ").strip().split()
         if '0' in opcao: break
         try:
             ids = list(map(int, opcao))
@@ -374,7 +375,7 @@ def registrar_compra_neo4j(tx, dados):
     UNWIND $carrinho AS item
     MATCH (p:Produto)
     WHERE elementId(p) = item.id
-    CREATE (comp)-[:INCLUI]->(p)
+    CREATE (comp)-[:INCLUI {quantidade: item.quantidade}]->(p)
     SET p.estoque = p.estoque - item.quantidade
     """
     tx.run(query, **dados)
